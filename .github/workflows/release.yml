@@ -1,0 +1,71 @@
+name: Release
+
+# Сборка бинарников rubezh (linux amd64/arm64) и заливка в GitHub Release,
+# созданный release-please (тег rubezh-vX.Y.Z). trivy-db (форк с источником БДУ)
+# чекаутится сиблингом — go.mod replace ../trivy-db.
+#
+# goreleaser не используется: его monorepo.tag_prefix (нужен для префиксных тегов)
+# доступен только в Pro. Здесь — матрица go build + gh release upload.
+
+on:
+  workflow_call:
+    inputs:
+      tag:
+        description: "Тег релиза (rubezh-vX.Y.Z)"
+        required: true
+        type: string
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Тег релиза (rubezh-vX.Y.Z)"
+        required: true
+        type: string
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        include:
+          - goos: linux
+            goarch: amd64
+          - goos: linux
+            goarch: arm64
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          path: trivy
+          ref: ${{ inputs.tag }}
+          fetch-depth: 0
+      - uses: actions/checkout@v4
+        with:
+          repository: dato-dev/trivy-db
+          ref: main
+          path: trivy-db
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: trivy/go.mod
+          cache-dependency-path: trivy/go.sum
+      - name: Сборка rubezh (${{ matrix.goos }}/${{ matrix.goarch }})
+        working-directory: trivy
+        env:
+          GOOS: ${{ matrix.goos }}
+          GOARCH: ${{ matrix.goarch }}
+          CGO_ENABLED: "0"
+          GOEXPERIMENT: jsonv2
+        run: |
+          go build -ldflags "-s -w" -o rubezh ./cmd/trivy
+          tar czf "rubezh_${{ inputs.tag }}_${{ matrix.goos }}_${{ matrix.goarch }}.tar.gz" rubezh
+          sha256sum "rubezh_${{ inputs.tag }}_${{ matrix.goos }}_${{ matrix.goarch }}.tar.gz" > "rubezh_${{ inputs.tag }}_${{ matrix.goos }}_${{ matrix.goarch }}.tar.gz.sha256"
+      - name: Заливка в релиз
+        working-directory: trivy
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release upload "${{ inputs.tag }}" \
+            "rubezh_${{ inputs.tag }}_${{ matrix.goos }}_${{ matrix.goarch }}.tar.gz" \
+            "rubezh_${{ inputs.tag }}_${{ matrix.goos }}_${{ matrix.goarch }}.tar.gz.sha256" \
+            --clobber

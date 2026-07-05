@@ -1,11 +1,14 @@
 {
   "$schema": "https://raw.githubusercontent.com/googleapis/release-please/main/schemas/config.json",
   "release-type": "go",
-  "include-component-in-tag": false,
+  "include-component-in-tag": true,
   "bump-minor-pre-major": true,
-  "skip-github-release": true,
-  "pull-request-title-pattern": "release: v${version} [${branch}]",
+  "bootstrap-sha": "878fdb461b7e6bd55648f3d7c253a6db0fc1ffb5",
   "packages": {
-    ".": {}
+    ".": {
+      "package-name": "rubezh",
+      "component": "rubezh",
+      "changelog-path": "CHANGELOG-RUBEZH.md"
+    }
   }
 }

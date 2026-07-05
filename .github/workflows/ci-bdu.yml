@@ -1,0 +1,40 @@
+name: CI (rubezh/БДУ)
+
+# CI форка rubezh: проверяем обогащение находок данными БДУ ФСТЭК и сборку бинарника.
+# trivy-db (форк с источником fstec-bdu) чекаутится сиблингом — go.mod replace
+# указывает на ../trivy-db. Upstream-workflow'ы Trivy перенесены в
+# .github/workflows-upstream/ (не запускаются).
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+env:
+  GOEXPERIMENT: jsonv2 # upstream trivy использует encoding/json/v2
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          path: trivy
+      - uses: actions/checkout@v4
+        with:
+          repository: dato-dev/trivy-db
+          ref: main
+          path: trivy-db
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: trivy/go.mod
+          cache-dependency-path: trivy/go.sum
+      - name: Тесты (обогащение БДУ + рендеринг)
+        working-directory: trivy
+        run: go test ./pkg/vulnerability/... ./pkg/report/table/...
+      - name: Сборка бинарника
+        working-directory: trivy
+        run: go build -o rubezh ./cmd/trivy

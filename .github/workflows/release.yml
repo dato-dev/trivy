@@ -57,7 +57,7 @@ jobs:
           CGO_ENABLED: "0"
           GOEXPERIMENT: jsonv2
         run: |
-          go build -ldflags "-s -w" -o rubezh ./cmd/trivy
+          go build -ldflags "-s -w" -o rubezh ./cmd/rubezh
           tar czf "rubezh_${{ inputs.tag }}_${{ matrix.goos }}_${{ matrix.goarch }}.tar.gz" rubezh
           sha256sum "rubezh_${{ inputs.tag }}_${{ matrix.goos }}_${{ matrix.goarch }}.tar.gz" > "rubezh_${{ inputs.tag }}_${{ matrix.goos }}_${{ matrix.goarch }}.tar.gz.sha256"
       - name: Заливка в релиз

@@ -176,20 +176,20 @@ func initConfig(configFile string, pathChanged bool) error {
 func NewRootCommand(globalFlags *flag.GlobalFlagGroup) *cobra.Command {
 	var versionFormat string
 	cmd := &cobra.Command{
-		Use:   "trivy [global flags] command [flags] target",
-		Short: "Unified security scanner",
-		Long:  "Scanner for vulnerabilities in container images, file systems, and Git repositories, as well as for configuration issues and hard-coded secrets",
-		Example: `  # Scan a container image
-  $ trivy image python:3.4-alpine
+		Use:   "rubezh [global flags] command [flags] target",
+		Short: "Сканер уязвимостей с поддержкой БДУ ФСТЭК (на базе Trivy)",
+		Long:  "rubezh — сканер уязвимостей в контейнерных образах, файловых системах и Git-репозиториях с обогащением находок идентификаторами БДУ ФСТЭК России. Форк Trivy.",
+		Example: `  # Просканировать образ
+  $ rubezh image python:3.4-alpine
 
-  # Scan a container image from a tar archive
-  $ trivy image --input ruby-3.1.tar
+  # Просканировать образ из tar-архива
+  $ rubezh image --input ruby-3.1.tar
 
-  # Scan local filesystem
-  $ trivy fs .
+  # Просканировать файловую систему
+  $ rubezh fs .
 
-  # Run in server mode
-  $ trivy server`,
+  # Запуск в режиме сервера
+  $ rubezh server`,
 		Args: cobra.NoArgs,
 		PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
 			// Set the Trivy version here so that we can override version printer.

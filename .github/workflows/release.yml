@@ -49,6 +49,11 @@ jobs:
         with:
           go-version-file: trivy/go.mod
           cache-dependency-path: trivy/go.sum
+      - name: Версия из тега
+        # rubezh-v1.0.0 → v1.0.0 (убираем component-префикс из имён ассетов)
+        env:
+          TAG: ${{ inputs.tag }}
+        run: echo "VERSION=${TAG#rubezh-}" >> "$GITHUB_ENV"
       - name: Сборка rubezh (${{ matrix.goos }}/${{ matrix.goarch }})
         working-directory: trivy
         env:
@@ -57,15 +62,14 @@ jobs:
           CGO_ENABLED: "0"
           GOEXPERIMENT: jsonv2
         run: |
+          asset="rubezh_${VERSION}_${{ matrix.goos }}_${{ matrix.goarch }}.tar.gz"
           go build -ldflags "-s -w" -o rubezh ./cmd/rubezh
-          tar czf "rubezh_${{ inputs.tag }}_${{ matrix.goos }}_${{ matrix.goarch }}.tar.gz" rubezh
-          sha256sum "rubezh_${{ inputs.tag }}_${{ matrix.goos }}_${{ matrix.goarch }}.tar.gz" > "rubezh_${{ inputs.tag }}_${{ matrix.goos }}_${{ matrix.goarch }}.tar.gz.sha256"
+          tar czf "$asset" rubezh
+          sha256sum "$asset" > "$asset.sha256"
       - name: Заливка в релиз
         working-directory: trivy
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          gh release upload "${{ inputs.tag }}" \
-            "rubezh_${{ inputs.tag }}_${{ matrix.goos }}_${{ matrix.goarch }}.tar.gz" \
-            "rubezh_${{ inputs.tag }}_${{ matrix.goos }}_${{ matrix.goarch }}.tar.gz.sha256" \
-            --clobber
+          asset="rubezh_${VERSION}_${{ matrix.goos }}_${{ matrix.goarch }}.tar.gz"
+          gh release upload "${{ inputs.tag }}" "$asset" "$asset.sha256" --clobber

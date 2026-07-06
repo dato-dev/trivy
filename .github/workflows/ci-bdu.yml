@@ -1,6 +1,7 @@
 name: CI (rubezh/БДУ)
 
-# CI форка rubezh: проверяем обогащение находок данными БДУ ФСТЭК и сборку бинарника.
+# CI форка rubezh: проверяем обогащение находок данными БДУ ФСТЭК и сборку бинарника
+# под все релизные платформы (linux/darwin × amd64/arm64).
 # trivy-db (форк с источником fstec-bdu) чекаутится сиблингом — go.mod replace
 # указывает на ../trivy-db. Upstream-workflow'ы Trivy перенесены в
 # .github/workflows-upstream/ (не запускаются).
@@ -35,6 +36,39 @@ jobs:
       - name: Тесты (обогащение БДУ + рендеринг)
         working-directory: trivy
         run: go test ./pkg/vulnerability/... ./pkg/report/table/...
-      - name: Сборка бинарника
+
+  build:
+    name: Сборка (${{ matrix.goos }}/${{ matrix.goarch }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - goos: linux
+            goarch: amd64
+          - goos: linux
+            goarch: arm64
+          - goos: darwin
+            goarch: amd64
+          - goos: darwin
+            goarch: arm64
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          path: trivy
+      - uses: actions/checkout@v4
+        with:
+          repository: dato-dev/trivy-db
+          ref: main
+          path: trivy-db
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: trivy/go.mod
+          cache-dependency-path: trivy/go.sum
+      - name: Кросс-сборка rubezh
         working-directory: trivy
-        run: go build -o rubezh ./cmd/rubezh
+        env:
+          GOOS: ${{ matrix.goos }}
+          GOARCH: ${{ matrix.goarch }}
+          CGO_ENABLED: "0"
+        run: go build -o /dev/null ./cmd/rubezh
